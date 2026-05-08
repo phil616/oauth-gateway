@@ -86,3 +86,7 @@ cd gateway-control && npm run check
 - HTTPKVDB 需要 HTTPS，并为控制面静态站点正确配置 CORS。
 - 源站应校验 `X-ZTA-Token`，并限制直接公网访问。
 - 不要提交真实密钥、API Key、OAuth secret、JWT secret 或 `.env`。
+
+## 许可证
+
+[MIT](LICENSE) © dreamreflex
