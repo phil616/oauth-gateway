@@ -47,6 +47,16 @@ OAUTH_CLIENT_SECRET
 
 `OAUTH_CLIENT_SECRET` 是否需要取决于 OAuth client 类型和 `OAUTH_CLIENT_AUTH_METHOD`。完整示例见 [oauth-gateway/.env.example](oauth-gateway/.env.example)。
 
+### IDP 配置
+
+在 IDP 中新增一个 OAuth/OIDC 应用，callback/redirect URI 配置为:
+
+```text
+https://你的受保护域名/cgi-oauth/callback
+```
+
+只需要授权 `email` scope，网关只使用邮箱做访问控制，其他 scope 不必要。
+
 ### 控制面
 
 ```bash
@@ -86,6 +96,21 @@ cd gateway-control && npm run check
 - HTTPKVDB 需要 HTTPS，并为控制面静态站点正确配置 CORS。
 - 源站应校验 `X-ZTA-Token`，并限制直接公网访问。
 - 不要提交真实密钥、API Key、OAuth secret、JWT secret 或 `.env`。
+
+Nginx 源站可以这样校验网关注入的密钥:
+
+```nginx
+# 需要保护的路径
+location / {
+    if ($http_x_zta_token != "a362afe2813bb25d89506eb0fee9e4a9038caf94916ec8089752cdd721dfe2fd" ) {
+        return 401;
+    }
+
+    try_files $uri $uri/ /index.html;
+    root /www/sites/zta.dreamreflex.com/index;
+    index index.html index.htm;
+}
+```
 
 ## 许可证
 
