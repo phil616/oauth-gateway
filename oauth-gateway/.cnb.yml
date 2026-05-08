@@ -1,0 +1,20 @@
+main:
+  push:
+    - stages:
+        - name: Deploy oauth gateway to EdgeOne Pages
+          image: node:20
+          script: |
+            echo "KVDB_BASE_URL=$KVDB_BASE_URL" >> .env
+            echo "KVDB_API_KEY=$KVDB_API_KEY" >> .env
+            echo "GATEWAY_JWT_SECRET=$GATEWAY_JWT_SECRET" >> .env
+            echo "OAUTH_TX_SECRET=$OAUTH_TX_SECRET" >> .env
+            echo "GATEWAY_COOKIE_NAME=${GATEWAY_COOKIE_NAME:-df_oauth_token}" >> .env
+            echo "ORIGIN_ZTA_TOKEN=$ORIGIN_ZTA_TOKEN" >> .env
+            echo "OAUTH_CLIENT_SECRET=$OAUTH_CLIENT_SECRET" >> .env
+            echo "ALLOW_PRIVATE_ORIGIN_IPS=${ALLOW_PRIVATE_ORIGIN_IPS:-false}" >> .env
+            echo "DOMAIN_CACHE_TTL_SECONDS=${DOMAIN_CACHE_TTL_SECONDS:-60}" >> .env
+            echo "ORIGIN_CACHE_TTL_SECONDS=${ORIGIN_CACHE_TTL_SECONDS:-60}" >> .env
+            echo "ACCESS_CACHE_TTL_SECONDS=${ACCESS_CACHE_TTL_SECONDS:-30}" >> .env
+            echo "OAUTH_CACHE_TTL_SECONDS=${OAUTH_CACHE_TTL_SECONDS:-300}" >> .env
+            npx edgeone pages deploy -n oauth-gateway -t $EDGEONE_API_TOKEN -e production
+
