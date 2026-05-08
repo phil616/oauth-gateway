@@ -518,27 +518,26 @@ function ConfigScreen({ onSave }) {
     event.preventDefault();
     setError("");
     const next = { baseUrl: normalizeBaseUrl(baseUrl), apiKey: apiKey.trim() };
-    if (!next.baseUrl || !next.apiKey) return setError("KVDB_BASE_URL 和 KVDB_API_KEY 都必须填写");
+    if (!next.baseUrl || !next.apiKey) return setError("数据源地址和访问密钥都必须填写");
     try {
       const client = makeClient(next);
       await client.probe();
       await initializeDataSpace(client);
       onSave(next);
     } catch (err) {
-      setError(`连接检查失败: ${err.message}`);
+      setError(`登录检查失败: ${err.message}`);
     }
   }
   return (
     <main className="config-page">
       <section className="config-panel">
         <div className="brand-mark"><img src={LOGO_URL} alt="DreamReflex" /></div>
-        <h1>连接 HTTPKVDB</h1>
-        <p>这是无状态前端。KVDB 地址和 API Key 会保存在当前浏览器 localStorage，便于下次直接进入控制台。</p>
+        <h1>云梦镜像零信任网关</h1>
         <form onSubmit={submit} className="form-stack">
-          <label>KVDB_BASE_URL<input value={baseUrl} onChange={e => setBaseUrl(e.target.value)} placeholder="https://kvdb-api.example.com" /></label>
-          <label>KVDB_API_KEY<input value={apiKey} onChange={e => setApiKey(e.target.value)} type="password" placeholder="ApiKey plaintext" /></label>
+          <label>数据源地址<input value={baseUrl} onChange={e => setBaseUrl(e.target.value)} placeholder="https://gateway-admin.example.com" /></label>
+          <label>访问密钥<input value={apiKey} onChange={e => setApiKey(e.target.value)} type="password" placeholder="请输入访问密钥" /></label>
           {error ? <div className="error-line">{error}</div> : null}
-          <button className="primary">连接控制台</button>
+          <button className="primary">登录</button>
         </form>
       </section>
     </main>
