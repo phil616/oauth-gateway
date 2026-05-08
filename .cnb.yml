@@ -1,0 +1,52 @@
+# oauth-gateway: EdgeOne Pages / Edge Functions
+# gateway-control: static web frontend
+
+main:
+  push:
+    - name: deploy-oauth-gateway
+      runner:
+        cpus: 2
+        tags: cnb:arch:amd64
+      docker:
+        image: node:20
+      imports:
+        - https://cnb.cool/greenshadecapital/dreamreflex/wikisite-secret/-/blob/main/wiki.yml
+      stages:
+        - name: Check edge functions
+          script: |
+            find oauth-gateway/edge-functions -name '*.js' -print -exec node --check {} \;
+
+        - name: Deploy oauth-gateway to EdgeOne
+          script: |
+            cd oauth-gateway
+            npx edgeone pages deploy -n oauth-gateway -t "$EDGEONE_API_TOKEN" -e production
+
+    - name: deploy-gateway-control
+      runner:
+        cpus: 2
+        tags: cnb:arch:amd64
+      docker:
+        image: node:20
+        volumes:
+          - gateway-control-npm:/root/.npm:rw
+      imports:
+        - https://cnb.cool/greenshadecapital/dreamreflex/assets-secrets/-/blob/main/api-server.yml
+      stages:
+        - name: Install dependencies
+          script: |
+            cd gateway-control
+            npm ci
+
+        - name: Build gateway-control
+          script: |
+            cd gateway-control
+            echo "VITE_COMMIT_SHA=${CNB_COMMIT}" >> .env.production
+            if [ -n "$VITE_DEFAULT_KVDB_BASE_URL" ]; then
+              echo "VITE_DEFAULT_KVDB_BASE_URL=$VITE_DEFAULT_KVDB_BASE_URL" >> .env.production
+            fi
+            npm run build
+
+        - name: Deploy gateway-control to EdgeOne
+          script: |
+            cd gateway-control
+            npx edgeone pages deploy dist/ -n gateway-control -t "$EDGEONE_API_TOKEN" -e production
