@@ -8,7 +8,7 @@
 OAUTH_ISSUER_URL=https://idp.example.com
 OAUTH_CLIENT_ID=client_xxx
 OAUTH_CLIENT_SECRET=secret_xxx
-OAUTH_SCOPES=openid email profile
+OAUTH_SCOPES=openid,email
 OAUTH_CLIENT_AUTH_METHOD=client_secret_post
 OAUTH_DISCOVERY_CACHE_TTL_SECONDS=300
 ```
@@ -89,4 +89,3 @@ OAUTH_DISCOVERY_URL=https://idp.example.com/.well-known/openid-configuration
 - `none`
 
 默认根据 well-known metadata 的 `token_endpoint_auth_methods_supported` 选择，优先 `client_secret_post`，再回退到 `client_secret_basic`。
-

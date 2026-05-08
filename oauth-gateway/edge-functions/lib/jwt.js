@@ -25,7 +25,7 @@ export async function signGatewayJwt(identity, domainConfig, secret, now = Math.
   return `${data}.${base64UrlEncode(signature)}`;
 }
 
-export async function verifyGatewayJwt(token, secret, expectedHost, now = Math.floor(Date.now() / 1000)) {
+export async function verifyGatewayJwt(token, secret, expectedHost, expectedIssuer = DEFAULT_ISSUER, now = Math.floor(Date.now() / 1000)) {
   if (!token || typeof token !== "string") return { ok: false, reason: "missing" };
   const parts = token.split(".");
   if (parts.length !== 3) return { ok: false, reason: "format" };
@@ -41,7 +41,7 @@ export async function verifyGatewayJwt(token, secret, expectedHost, now = Math.f
   if (header.alg !== "HS256" || header.typ !== "JWT") return { ok: false, reason: "alg" };
   const valid = await hmacVerify(`${headerEncoded}.${payloadEncoded}`, base64UrlDecode(signatureEncoded), secret);
   if (!valid) return { ok: false, reason: "signature" };
-  if (payload.iss !== DEFAULT_ISSUER) return { ok: false, reason: "issuer" };
+  if (payload.iss !== expectedIssuer) return { ok: false, reason: "issuer" };
   if (!payload.sub || String(payload.sub).indexOf("@") < 0) return { ok: false, reason: "subject" };
   if (typeof payload.exp !== "number" || payload.exp <= now) return { ok: false, reason: "expired" };
   if (typeof payload.nbf === "number" && payload.nbf > now + 60) return { ok: false, reason: "not_before" };

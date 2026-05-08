@@ -55,7 +55,7 @@ OAUTH_CLIENT_SECRET
 https://你的受保护域名/cgi-oauth/callback
 ```
 
-只需要授权 `email` scope，网关只使用邮箱做访问控制，其他 scope 不必要。
+推荐使用 `https://api.dreamreflex.com` 作为 `OAUTH_ISSUER_URL`。`OAUTH_SCOPES` 配置为 `openid,email`，网关只使用已验证邮箱做访问控制，`profile`、`offline_access` 等其他 scope 不必要。
 
 ### 控制面
 
@@ -95,6 +95,7 @@ cd gateway-control && npm run check
 - 网关建议使用只读 KVDB API Key，控制面使用可写 Key。
 - HTTPKVDB 需要 HTTPS，并为控制面静态站点正确配置 CORS。
 - 源站应校验 `X-ZTA-Token`，并限制直接公网访问。
+- 禁用用户不会立即吊销已经签发的 JWT；这是当前无状态 Cookie 设计的取舍，已有会话会在 JWT TTL 到期或 access version 变化后失效。
 - 不要提交真实密钥、API Key、OAuth secret、JWT secret 或 `.env`。
 
 Nginx 源站可以这样校验网关注入的密钥:

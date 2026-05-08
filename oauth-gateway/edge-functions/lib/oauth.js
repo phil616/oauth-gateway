@@ -1,6 +1,6 @@
 import { isEmailAllowed, normalizeEmail } from "./access.js";
 import { getCookie, setCookie } from "./cookies.js";
-import { base64UrlEncode, hmacSign, randomId, sha256Base64Url } from "./crypto.js";
+import { base64UrlDecode, base64UrlEncode, decodeJson, hmacSign, randomId, sha256Base64Url } from "./crypto.js";
 import { errorResponse, redirect } from "./http.js";
 import { getRequestHost } from "./hosts.js";
 import { signGatewayJwt } from "./jwt.js";
@@ -8,6 +8,7 @@ import { kvGet, loadDomainBundle, requireEnv } from "./kvdb.js";
 
 const TX_COOKIE = "__Host-df_oauth_tx";
 const discoveryCache = new Map();
+const jwksCache = new Map();
 
 export async function oauthStart(context) {
   const { request, env } = context;
@@ -89,8 +90,12 @@ export async function oauthCallback(context) {
   });
   if (!tokenResponse.ok) return errorResponse(request, 502, "OAUTH_TOKEN_FAILED", "oauth token exchange failed");
   const tokenData = await tokenResponse.json();
-  const userInfo = await fetchUserInfo(oauth, tokenData);
-  const email = normalizeEmail(userInfo.email || userInfo.sub);
+  const idToken = await verifyIdToken(oauth, tokenData.id_token, tx.nonce);
+  if (!idToken.ok) return errorResponse(request, 403, "ID_TOKEN_INVALID", `id token is invalid: ${idToken.reason}`);
+  if (idToken.payload.email_verified !== true) {
+    return errorResponse(request, 403, "EMAIL_UNVERIFIED", "oauth email is not verified");
+  }
+  const email = normalizeEmail(idToken.payload.email);
   if (!email) return errorResponse(request, 403, "EMAIL_MISSING", "oauth identity has no email");
   const user = await kvGet(env, `user:${email}`, Number(env.ACCESS_CACHE_TTL_SECONDS || 30));
   if (!isEmailAllowed(email, bundle.access, user)) {
@@ -124,10 +129,11 @@ async function loadOAuthFromEnv(env) {
   if (!clientId) return null;
   const metadata = await loadOAuthMetadata(env);
   if (!metadata || !metadata.authorization_endpoint || !metadata.token_endpoint) return null;
-  const scopes = String(env.OAUTH_SCOPES || "openid email profile")
+  const scopes = String(env.OAUTH_SCOPES || "openid,email")
     .split(/[,\s]+/)
     .map(item => item.trim())
     .filter(Boolean);
+  if (scopes.indexOf("openid") < 0) scopes.unshift("openid");
   return {
     issuer: metadata.issuer || env.OAUTH_ISSUER_URL || env.OAUTH_ENDPOINT || "",
     authorization_endpoint: metadata.authorization_endpoint,
@@ -184,19 +190,118 @@ function chooseClientAuthMethod(env, metadata) {
   return "client_secret_post";
 }
 
+async function verifyIdToken(oauth, token, nonce, now = Math.floor(Date.now() / 1000)) {
+  if (!token || typeof token !== "string") return { ok: false, reason: "missing" };
+  const parts = token.split(".");
+  if (parts.length !== 3) return { ok: false, reason: "format" };
+  const [headerEncoded, payloadEncoded, signatureEncoded] = parts;
+  let header;
+  let payload;
+  try {
+    header = decodeJson(headerEncoded);
+    payload = decodeJson(payloadEncoded);
+  } catch {
+    return { ok: false, reason: "decode" };
+  }
+  if (header.alg !== "RS256" || header.typ && header.typ !== "JWT") return { ok: false, reason: "alg" };
+  const jwk = await loadJwk(oauth, header.kid);
+  if (!jwk) return { ok: false, reason: "kid" };
+  const valid = await verifyRs256(`${headerEncoded}.${payloadEncoded}`, base64UrlDecode(signatureEncoded), jwk).catch(() => false);
+  if (!valid) return { ok: false, reason: "signature" };
+  if (payload.iss !== oauth.issuer) return { ok: false, reason: "issuer" };
+  const audiences = Array.isArray(payload.aud) ? payload.aud : [payload.aud];
+  if (audiences.indexOf(oauth.client_id) < 0) return { ok: false, reason: "audience" };
+  if (audiences.length > 1 && payload.azp !== oauth.client_id) return { ok: false, reason: "azp" };
+  if (payload.nonce !== nonce) return { ok: false, reason: "nonce" };
+  if (typeof payload.exp !== "number" || payload.exp <= now) return { ok: false, reason: "expired" };
+  if (typeof payload.nbf === "number" && payload.nbf > now + 60) return { ok: false, reason: "not_before" };
+  return { ok: true, payload };
+}
+
+async function loadJwk(oauth, kid) {
+  if (!oauth.jwks_uri) return null;
+  const cached = jwksCache.get(oauth.jwks_uri);
+  const now = Date.now();
+  if (cached && cached.expiresAt > now) return selectJwk(cached.keys, kid);
+  const response = await fetch(oauth.jwks_uri, { headers: { accept: "application/json" } }).catch(() => null);
+  if (!response || !response.ok) return null;
+  const jwks = await response.json().catch(() => null);
+  const keys = Array.isArray(jwks?.keys) ? jwks.keys : [];
+  jwksCache.set(oauth.jwks_uri, { keys, expiresAt: now + 300000 });
+  return selectJwk(keys, kid);
+}
+
+function selectJwk(keys, kid) {
+  return keys.find(key => key.kty === "RSA" && key.use !== "enc" && key.alg === "RS256" && (!kid || key.kid === kid)) || null;
+}
+
+async function verifyRs256(data, signature, jwk) {
+  const spki = rsaJwkToSpki(jwk);
+  const key = await crypto.subtle.importKey(
+    "spki",
+    spki,
+    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+    false,
+    ["verify"]
+  );
+  return crypto.subtle.verify("RSASSA-PKCS1-v1_5", key, signature, new TextEncoder().encode(data));
+}
+
+function rsaJwkToSpki(jwk) {
+  const modulus = derInteger(base64UrlDecode(jwk.n));
+  const exponent = derInteger(base64UrlDecode(jwk.e));
+  const rsaPublicKey = derSequence(modulus, exponent);
+  const algorithm = derSequence(
+    Uint8Array.from([0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01, 0x01]),
+    Uint8Array.from([0x05, 0x00])
+  );
+  return derSequence(algorithm, derBitString(rsaPublicKey));
+}
+
+function derSequence(...parts) {
+  return derWrap(0x30, concatBytes(parts));
+}
+
+function derInteger(value) {
+  let bytes = value;
+  while (bytes.length > 1 && bytes[0] === 0x00 && bytes[1] < 0x80) bytes = bytes.slice(1);
+  if (bytes[0] >= 0x80) bytes = concatBytes([Uint8Array.from([0x00]), bytes]);
+  return derWrap(0x02, bytes);
+}
+
+function derBitString(value) {
+  return derWrap(0x03, concatBytes([Uint8Array.from([0x00]), value]));
+}
+
+function derWrap(tag, value) {
+  return concatBytes([Uint8Array.from([tag]), derLength(value.length), value]);
+}
+
+function derLength(length) {
+  if (length < 0x80) return Uint8Array.from([length]);
+  const bytes = [];
+  let value = length;
+  while (value > 0) {
+    bytes.unshift(value & 0xff);
+    value >>= 8;
+  }
+  return Uint8Array.from([0x80 | bytes.length, ...bytes]);
+}
+
+function concatBytes(parts) {
+  const total = parts.reduce((sum, part) => sum + part.length, 0);
+  const output = new Uint8Array(total);
+  let offset = 0;
+  for (const part of parts) {
+    output.set(part, offset);
+    offset += part.length;
+  }
+  return output;
+}
+
 function basicClientCredential(clientId, clientSecret) {
   const encode = value => encodeURIComponent(value).replace(/%20/g, "+");
   return btoa(`${encode(clientId)}:${encode(clientSecret)}`);
-}
-
-async function fetchUserInfo(oauth, tokenData) {
-  if (oauth.userinfo_endpoint && tokenData.access_token) {
-    const response = await fetch(oauth.userinfo_endpoint, {
-      headers: { authorization: `Bearer ${tokenData.access_token}` }
-    });
-    if (response.ok) return response.json();
-  }
-  return {};
 }
 
 async function signTransaction(tx, secret) {

@@ -20,8 +20,12 @@ export async function handleGatewayRequest(context) {
   }
 
   try {
+    const bundle = await loadDomainBundle(env, host);
+    if (!bundle) return errorResponse(request, 404, "DOMAIN_NOT_FOUND", "domain is not configured");
+
     const token = getCookie(request, env.GATEWAY_COOKIE_NAME || "df_oauth_token");
-    const verified = await verifyGatewayJwt(token, requireEnv(env, "GATEWAY_JWT_SECRET"), host);
+    const expectedIssuer = bundle.domain?.jwt?.issuer || "DreamReflex ZeroTrust";
+    const verified = await verifyGatewayJwt(token, requireEnv(env, "GATEWAY_JWT_SECRET"), host, expectedIssuer);
     if (!verified.ok) {
       if ((request.headers.get("accept") || "").indexOf("text/html") >= 0) {
         return html(loginPage(host, safeReturnTo(url)));
@@ -29,8 +33,6 @@ export async function handleGatewayRequest(context) {
       return errorResponse(request, 401, "UNAUTHENTICATED", "authentication required");
     }
 
-    const bundle = await loadDomainBundle(env, host);
-    if (!bundle) return errorResponse(request, 404, "DOMAIN_NOT_FOUND", "domain is not configured");
     if (verified.payload.access_version && bundle.access && bundle.access.version && verified.payload.access_version !== bundle.access.version) {
       return errorResponse(request, 401, "TOKEN_STALE", "authentication token is stale");
     }
@@ -39,4 +41,3 @@ export async function handleGatewayRequest(context) {
     return new Response("Gateway Error: " + error.message, { status: 500 });
   }
 }
-

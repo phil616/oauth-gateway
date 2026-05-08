@@ -4,7 +4,7 @@ export async function onRequest(context) {
   try {
     return await oauthCallback(context);
   } catch (error) {
-    return new Response("OAuth Callback Error: " + error.message, { status: 500 });
+    console.error("OAuth Callback Error", error);
+    return new Response("OAuth Callback Error", { status: 500 });
   }
 }
-
