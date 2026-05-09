@@ -2,6 +2,8 @@
 
 基于 Tencent Cloud EdgeOne Edge Functions 的零信任访问网关。边缘函数拦截受保护域名的请求，完成 OAuth 登录、邮箱授权校验和 JWT Cookie 会话校验，通过后再代理到源站。
 
+需要一个HTTP的键值存储作为持久化后端,可参考或直接使用[httpkvdb](https://github.com/phil616/httpkvdb)项目
+
 ## 目录
 
 ```text
