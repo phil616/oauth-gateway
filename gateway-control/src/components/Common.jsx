@@ -1,4 +1,5 @@
 import { CheckCircle2, CircleAlert, Search, X } from "lucide-react";
+import { normalizeError } from "../services/errorCatalog";
 
 export function Metric({ icon: Icon, label, value, sub }) {
   return <section className="metric"><Icon size={20} /><div><span>{label}</span><strong>{value}</strong><small>{sub}</small></div></section>;
@@ -28,3 +29,14 @@ export function Drawer({ title, children, onClose }) {
   return <div className="drawer-backdrop"><aside className="drawer"><header><h2>{title}</h2><button className="icon" onClick={onClose}><X size={18} /></button></header>{children}</aside></div>;
 }
 
+export function ErrorNotice({ error, fallbackName = "OPERATION_FAILED", className = "error-line" }) {
+  if (!error) return null;
+  const normalized = normalizeError(error, fallbackName);
+  return (
+    <div className={className}>
+      <CircleAlert size={16} />
+      <span><strong>{normalized.code}</strong> {normalized.name} · {normalized.title}</span>
+      <a href={normalized.documentation_url} target="_blank" rel="noreferrer">错误码说明</a>
+    </div>
+  );
+}

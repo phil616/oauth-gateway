@@ -25,18 +25,18 @@ function isSafeOriginIp(ip, env) {
 export async function fetchOrigin(context, origin) {
   const { request, env } = context;
   if (!origin || !origin.origin_ip || !origin.origin_host_header) {
-    return errorResponse(request, 502, "ORIGIN_NOT_CONFIGURED", "origin is not configured");
+    return errorResponse(request, 502, "ORIGIN_NOT_CONFIGURED");
   }
   const scheme = origin.origin_scheme || "https";
   if (!(scheme === "http" || scheme === "https")) {
-    return errorResponse(request, 502, "ORIGIN_SCHEME_DENIED", "origin scheme is denied");
+    return errorResponse(request, 502, "ORIGIN_SCHEME_DENIED");
   }
   if (!isSafeOriginIp(origin.origin_ip, env)) {
-    return errorResponse(request, 502, "ORIGIN_DENIED", "origin target is denied");
+    return errorResponse(request, 502, "ORIGIN_DENIED");
   }
   const tokenEnv = origin.zta_token_env || "ORIGIN_ZTA_TOKEN";
   const ztaToken = env[tokenEnv];
-  if (!ztaToken) return errorResponse(request, 500, "ORIGIN_TOKEN_MISSING", "origin token env is missing");
+  if (!ztaToken) return errorResponse(request, 500, "ORIGIN_TOKEN_MISSING");
 
   const url = new URL(request.url);
   const target = new URL(`${url.pathname}${url.search}`, `${scheme}://${origin.origin_ip}`);

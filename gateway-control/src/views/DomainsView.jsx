@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Plus, Save, Trash2 } from "lucide-react";
-import { Drawer, Field, PanelHeader, StatusBadge, Toolbar } from "../components/Common";
+import { Drawer, ErrorNotice, Field, PanelHeader, StatusBadge, Toolbar } from "../components/Common";
 import { deleteDomain, emptyDomain, upsertDomain } from "../services/gatewayRepository";
 
 function toDomainForm(item) {
@@ -54,7 +54,7 @@ function DomainDrawer({ client, initial, onClose, onSaved }) {
       await upsertDomain(client, form);
       await onSaved();
     } catch (err) {
-      setError(err.message);
+      setError(err);
     } finally {
       setBusy(false);
     }
@@ -76,7 +76,7 @@ function DomainDrawer({ client, initial, onClose, onSaved }) {
         <Field label="X-ZTA-Token 环境变量" value={form.zta_token_env} setValue={v => setForm({ ...form, zta_token_env: v })} />
         <label className="check-row"><input type="checkbox" checked={form.enabled} onChange={e => setForm({ ...form, enabled: e.target.checked })} />启用域名</label>
       </div>
-      {error ? <div className="error-line">{error}</div> : null}
+      <ErrorNotice error={error} fallbackName="OPERATION_FAILED" />
       <div className="drawer-actions">
         <button className="primary" onClick={save} disabled={busy}><Save size={16} />保存</button>
         {initial.host ? <button className="ghost danger" onClick={remove}><Trash2 size={16} />删除</button> : null}
@@ -84,4 +84,3 @@ function DomainDrawer({ client, initial, onClose, onSaved }) {
     </Drawer>
   );
 }
-

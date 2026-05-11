@@ -14,12 +14,12 @@ export async function oauthStart(context) {
   const { request, env } = context;
   const url = new URL(request.url);
   const host = getRequestHost(request);
-  if (!host) return errorResponse(request, 400, "BAD_HOST", "invalid host");
+  if (!host) return errorResponse(request, 400, "BAD_HOST");
   const bundle = await loadDomainBundle(env, host);
-  if (!bundle) return errorResponse(request, 404, "DOMAIN_NOT_FOUND", "domain is not configured");
-  if (!hasOAuthProvider(bundle.domain)) return errorResponse(request, 500, "OAUTH_NOT_CONFIGURED", "oauth provider is not enabled for this domain");
+  if (!bundle) return errorResponse(request, 404, "DOMAIN_NOT_FOUND");
+  if (!hasOAuthProvider(bundle.domain)) return errorResponse(request, 500, "OAUTH_NOT_CONFIGURED");
   const oauth = await loadOAuthFromEnv(env);
-  if (!oauth) return errorResponse(request, 500, "OAUTH_NOT_CONFIGURED", "oauth environment is not configured");
+  if (!oauth) return errorResponse(request, 500, "OAUTH_NOT_CONFIGURED");
 
   const state = randomId(24);
   const nonce = randomId(24);
@@ -48,22 +48,22 @@ export async function oauthCallback(context) {
   const { request, env } = context;
   const url = new URL(request.url);
   const host = getRequestHost(request);
-  if (!host) return errorResponse(request, 400, "BAD_HOST", "invalid host");
+  if (!host) return errorResponse(request, 400, "BAD_HOST");
   const tx = await verifyTransaction(getCookie(request, TX_COOKIE), requireEnv(env, "OAUTH_TX_SECRET"));
   if (!tx || tx.host !== host || Date.now() - tx.created_at > 300000) {
-    return errorResponse(request, 400, "OAUTH_STATE_INVALID", "oauth transaction is invalid");
+    return errorResponse(request, 400, "OAUTH_STATE_INVALID");
   }
   if (url.searchParams.get("state") !== tx.state) {
-    return errorResponse(request, 400, "OAUTH_STATE_INVALID", "oauth state is invalid");
+    return errorResponse(request, 400, "OAUTH_STATE_INVALID");
   }
   const code = url.searchParams.get("code");
-  if (!code) return errorResponse(request, 400, "OAUTH_CODE_MISSING", "oauth code is missing");
+  if (!code) return errorResponse(request, 400, "OAUTH_CODE_MISSING");
 
   const bundle = await loadDomainBundle(env, host);
-  if (!bundle) return errorResponse(request, 404, "DOMAIN_NOT_FOUND", "domain is not configured");
-  if (!hasOAuthProvider(bundle.domain)) return errorResponse(request, 500, "OAUTH_NOT_CONFIGURED", "oauth provider is not enabled for this domain");
+  if (!bundle) return errorResponse(request, 404, "DOMAIN_NOT_FOUND");
+  if (!hasOAuthProvider(bundle.domain)) return errorResponse(request, 500, "OAUTH_NOT_CONFIGURED");
   const oauth = await loadOAuthFromEnv(env);
-  if (!oauth) return errorResponse(request, 500, "OAUTH_NOT_CONFIGURED", "oauth environment is not configured");
+  if (!oauth) return errorResponse(request, 500, "OAUTH_NOT_CONFIGURED");
 
   const redirectUri = `${url.origin}/cgi-oauth/callback`;
   const tokenBody = new URLSearchParams({
@@ -88,18 +88,18 @@ export async function oauthCallback(context) {
     headers: tokenHeaders,
     body: tokenBody.toString()
   });
-  if (!tokenResponse.ok) return errorResponse(request, 502, "OAUTH_TOKEN_FAILED", "oauth token exchange failed");
+  if (!tokenResponse.ok) return errorResponse(request, 502, "OAUTH_TOKEN_FAILED");
   const tokenData = await tokenResponse.json();
   const idToken = await verifyIdToken(oauth, tokenData.id_token, tx.nonce);
-  if (!idToken.ok) return errorResponse(request, 403, "ID_TOKEN_INVALID", `id token is invalid: ${idToken.reason}`);
+  if (!idToken.ok) return errorResponse(request, 403, "ID_TOKEN_INVALID");
   if (idToken.payload.email_verified !== true) {
-    return errorResponse(request, 403, "EMAIL_UNVERIFIED", "oauth email is not verified");
+    return errorResponse(request, 403, "EMAIL_UNVERIFIED");
   }
   const email = normalizeEmail(idToken.payload.email);
-  if (!email) return errorResponse(request, 403, "EMAIL_MISSING", "oauth identity has no email");
+  if (!email) return errorResponse(request, 403, "EMAIL_MISSING");
   const user = await kvGet(env, `user:${email}`, Number(env.ACCESS_CACHE_TTL_SECONDS || 30));
   if (!isEmailAllowed(email, bundle.access, user)) {
-    return errorResponse(request, 403, "ACCESS_DENIED", "email is not allowed for this domain");
+    return errorResponse(request, 403, "ACCESS_DENIED");
   }
 
   const jwt = await signGatewayJwt(

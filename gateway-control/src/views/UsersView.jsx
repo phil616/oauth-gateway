@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Plus, Save, Trash2 } from "lucide-react";
-import { Drawer, Field, PanelHeader, StatusBadge, Toolbar } from "../components/Common";
+import { Drawer, ErrorNotice, Field, PanelHeader, StatusBadge, Toolbar } from "../components/Common";
 import { deleteUser, upsertUser } from "../services/gatewayRepository";
 
 export function UsersView({ client, state, refresh }) {
@@ -38,7 +38,7 @@ function UserDrawer({ client, initial, onClose, onSaved }) {
       await upsertUser(client, form);
       await onSaved();
     } catch (err) {
-      setError(err.message);
+      setError(err);
     }
   }
 
@@ -55,7 +55,7 @@ function UserDrawer({ client, initial, onClose, onSaved }) {
         <Field label="显示名称" value={form.display_name || ""} setValue={v => setForm({ ...form, display_name: v })} />
         <label className="check-row"><input type="checkbox" checked={form.enabled !== false} onChange={e => setForm({ ...form, enabled: e.target.checked })} />启用用户</label>
       </div>
-      {error ? <div className="error-line">{error}</div> : null}
+      <ErrorNotice error={error} fallbackName="OPERATION_FAILED" />
       <div className="drawer-actions">
         <button className="primary" onClick={save}><Save size={16} />保存</button>
         {initial.email ? <button className="ghost danger" onClick={remove}><Trash2 size={16} />删除</button> : null}
@@ -63,4 +63,3 @@ function UserDrawer({ client, initial, onClose, onSaved }) {
     </Drawer>
   );
 }
-

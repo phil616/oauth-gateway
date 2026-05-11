@@ -480,10 +480,19 @@ td small {
   border: 1px solid #cbdcff;
 }
 .error-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: 10px 12px;
   border-radius: 12px;
   font-size: 13px;
   line-height: 1.5;
+}
+.error-line span, .banner.error span { flex: 1; min-width: 0; }
+.error-line a, .banner.error a {
+  color: #7f2f2f;
+  font-weight: 700;
+  white-space: nowrap;
 }
 .settings-grid { max-width: 560px; }
 

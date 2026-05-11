@@ -1,10 +1,11 @@
 import { oauthStart } from "../lib/oauth.js";
+import { errorResponse } from "../lib/http.js";
 
 export async function onRequest(context) {
   try {
     return await oauthStart(context);
   } catch (error) {
-    return new Response("OAuth Login Error: " + error.message, { status: 500 });
+    console.error("OAuth login internal error", error);
+    return errorResponse(context.request, 500, "OAUTH_INTERNAL_ERROR");
   }
 }
-

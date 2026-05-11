@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
-import { CircleAlert, Search } from "lucide-react";
-import { PanelHeader } from "../components/Common";
+import { Search } from "lucide-react";
+import { ErrorNotice, PanelHeader } from "../components/Common";
 import { APP_USERSPACE } from "../config/constants";
 import { isMissingKey } from "../services/kvdbClient";
 
@@ -37,7 +37,7 @@ export function KvdbReadView({ client, state }) {
   async function query(event) {
     event?.preventDefault();
     const logicalKey = normalizeQueryKey(key);
-    if (!logicalKey) return setError("请输入要查询的 KVDB key");
+    if (!logicalKey) return setError("KVDB_KEY_REQUIRED");
     setBusy(true);
     setError("");
     setResult(null);
@@ -52,9 +52,9 @@ export function KvdbReadView({ client, state }) {
       });
     } catch (err) {
       if (isMissingKey(err)) {
-        setError(`key 不存在: ${APP_USERSPACE}/${logicalKey}`);
+        setError("KEY_NOT_FOUND");
       } else {
-        setError(err.message);
+        setError(err);
       }
     } finally {
       setBusy(false);
@@ -82,7 +82,7 @@ export function KvdbReadView({ client, state }) {
       </section>
       <section className="panel kvdb-result-panel">
         <PanelHeader title="查询结果" />
-        {error ? <div className="banner error"><CircleAlert size={16} />{error}</div> : null}
+        <ErrorNotice error={error} fallbackName="KVDB_REQUEST_FAILED" className="banner error" />
         {result ? (
           <>
             <div className="kvdb-meta">
@@ -101,4 +101,3 @@ export function KvdbReadView({ client, state }) {
     </div>
   );
 }
-

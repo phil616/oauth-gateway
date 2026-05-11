@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Activity, CircleAlert, Database, Globe2, Link2, LogOut, RefreshCw, Search, UsersRound } from "lucide-react";
+import { Activity, Database, Globe2, Link2, LogOut, RefreshCw, Search, UsersRound } from "lucide-react";
+import { ErrorNotice } from "../components/Common";
 import { LOGO_URL } from "../config/constants";
 import { makeClient } from "../services/kvdbClient";
 import { loadAll } from "../services/gatewayRepository";
@@ -30,7 +31,7 @@ export function Shell({ config, onReset }) {
       const loaded = await loadAll(client);
       setState({ ...loaded, loading: false, error: "" });
     } catch (err) {
-      setState(prev => ({ ...prev, loading: false, error: err.message }));
+      setState(prev => ({ ...prev, loading: false, error: err }));
     }
   }
 
@@ -61,7 +62,7 @@ export function Shell({ config, onReset }) {
             <button className="ghost danger" onClick={onReset}><LogOut size={16} />清除凭据</button>
           </div>
         </header>
-        {state.error ? <div className="banner error"><CircleAlert size={16} />{state.error}</div> : null}
+        <ErrorNotice error={state.error} fallbackName="DATA_LOAD_FAILED" className="banner error" />
         {tab === "dashboard" && <Dashboard state={state} setTab={setTab} />}
         {tab === "domains" && <DomainsView client={client} state={state} refresh={refresh} />}
         {tab === "users" && <UsersView client={client} state={state} refresh={refresh} />}
@@ -72,4 +73,3 @@ export function Shell({ config, onReset }) {
     </div>
   );
 }
-

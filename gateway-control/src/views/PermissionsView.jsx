@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { CheckCircle2, CircleMinus, Save, Search, SlidersHorizontal } from "lucide-react";
-import { Drawer, PanelHeader } from "../components/Common";
+import { Drawer, ErrorNotice, PanelHeader } from "../components/Common";
 import { saveDomainAccessPolicy, updateAccess } from "../services/gatewayRepository";
 import { normalizeEmail, normalizeEmailDomain, normalizeHost } from "../utils/validators";
 
@@ -64,7 +64,7 @@ export function PermissionsView({ client, state, refresh }) {
   async function setGrant(email, host, allow) {
     const normalizedEmail = normalizeEmail(email);
     const normalizedHost = normalizeHost(host);
-    if (!normalizedEmail || !normalizedHost) return setError("请选择有效用户和域名");
+    if (!normalizedEmail || !normalizedHost) return setError("BAD_ACCESS_INPUT");
     const key = `${normalizedEmail}:${normalizedHost}`;
     setBusyKey(key);
     setError("");
@@ -72,7 +72,7 @@ export function PermissionsView({ client, state, refresh }) {
       await updateAccess(client, normalizedEmail, normalizedHost, allow);
       await refresh();
     } catch (err) {
-      setError(err.message);
+      setError(err);
     } finally {
       setBusyKey("");
     }
@@ -82,7 +82,7 @@ export function PermissionsView({ client, state, refresh }) {
     <div className="content-grid permissions-layout">
       <section className="panel permission-summary-panel">
         <PanelHeader title="许可矩阵" />
-        {error ? <div className="error-line">{error}</div> : null}
+        <ErrorNotice error={error} fallbackName="OPERATION_FAILED" />
         <div className="permission-summary">
           <div><span>显式邮箱许可</span><strong>{totals.explicit}</strong></div>
           <div><span>邮箱域名策略</span><strong>{totals.inherited}</strong></div>
@@ -199,7 +199,7 @@ function DomainPolicyDrawer({ client, domainRecord, onClose, onSaved }) {
       });
       await onSaved();
     } catch (err) {
-      setError(err.message);
+      setError(err);
     } finally {
       setBusy(false);
     }
@@ -231,7 +231,7 @@ function DomainPolicyDrawer({ client, domainRecord, onClose, onSaved }) {
           <div><span>有效邮箱域名</span><strong>{new Set(parsedDomains).size}</strong></div>
         </div>
       </div>
-      {error ? <div className="error-line">{error}</div> : null}
+      <ErrorNotice error={error} fallbackName="OPERATION_FAILED" />
       <div className="drawer-actions">
         <button className="primary" onClick={save} disabled={busy}><Save size={16} />{busy ? "保存中" : "保存策略"}</button>
       </div>

@@ -1,5 +1,6 @@
 import { APP_USERSPACE } from "../config/constants";
 import { isMissingKey } from "./kvdbClient";
+import { normalizeError } from "./errorCatalog";
 import { normalizeEmail, normalizeEmailDomain, normalizeHost, nowIso } from "../utils/validators";
 
 export async function getOrEmpty(client, key, fallback) {
@@ -212,24 +213,29 @@ function buildIntegrityReport(domainRecords, userRecords) {
   const domainAccessByHost = new Map();
   for (const item of domainRecords) {
     const host = item.domain?.host;
-    if (!item.domain) issues.push({ level: "error", key: "domains", message: "domain index points to missing domain config" });
-    if (item.domain && !item.access) issues.push({ level: "error", key: `access:domain:${host}`, message: "missing domain access policy" });
-    if (item.domain && !item.origin) issues.push({ level: "error", key: `origin:${item.domain.origin_id || ""}`, message: "missing origin config" });
+    if (!item.domain) issues.push(integrityIssue("error", "domains", "DOMAIN_INDEX_CONFIG_MISSING"));
+    if (item.domain && !item.access) issues.push(integrityIssue("error", `access:domain:${host}`, "DOMAIN_ACCESS_POLICY_MISSING"));
+    if (item.domain && !item.origin) issues.push(integrityIssue("error", `origin:${item.domain.origin_id || ""}`, "DOMAIN_ORIGIN_MISSING"));
     if (item.domain && item.access) domainAccessByHost.set(host, item.access);
   }
   const hosts = Array.from(domainAccessByHost.keys()).sort();
   for (const item of userRecords) {
     const email = item.user?.email;
-    if (!item.user) issues.push({ level: "error", key: "users", message: "user index points to missing user config" });
-    if (item.user && !item.access) issues.push({ level: "warning", key: `access:user:${email}`, message: "missing user access index" });
+    if (!item.user) issues.push(integrityIssue("error", "users", "USER_INDEX_CONFIG_MISSING"));
+    if (item.user && !item.access) issues.push(integrityIssue("warning", `access:user:${email}`, "USER_ACCESS_INDEX_MISSING"));
     if (item.user && item.access) {
       const expected = hosts.filter(host => isEmailGrantedByDomainAccess(email, domainAccessByHost.get(host))).sort();
       if (!arraysEqual(item.access.domains || [], expected)) {
-        issues.push({ level: "warning", key: `access:user:${email}`, message: "user access index differs from domain access policies" });
+        issues.push(integrityIssue("warning", `access:user:${email}`, "USER_ACCESS_INDEX_MISMATCH"));
       }
     }
   }
   return { ok: issues.length === 0, issues };
+}
+
+function integrityIssue(level, key, name) {
+  const error = normalizeError(name);
+  return { level, key, error_name: error.name, error_code: error.code, title: error.title };
 }
 
 export async function upsertDomain(client, input) {
@@ -546,11 +552,16 @@ export async function domainStatus(client, host) {
   const detail = await loadDomainDetail(client, host);
   const head = detail.domain ? await client.head(`domain:${host}`) : { exists: false };
   const checks = [
-    { name: "domain_config", ok: Boolean(detail.domain), message: detail.domain ? "domain config exists" : "missing domain config" },
-    { name: "domain_enabled", ok: detail.domain?.enabled !== false, message: detail.domain?.enabled === false ? "domain disabled" : "domain enabled" },
-    { name: "access_index", ok: Boolean(detail.access), message: detail.access ? "domain access index exists" : "missing access:domain key" },
-    { name: "origin_config", ok: Boolean(detail.origin), message: detail.origin ? "origin config exists" : "missing origin config" },
-    { name: "kv_domain_head", ok: head.exists, message: head.exists ? `version ${head.version || "-"}` : "domain key missing" }
+    { name: "domain_config", ok: Boolean(detail.domain), message: detail.domain ? "域名配置已存在" : codedMessage("DOMAIN_NOT_FOUND") },
+    { name: "domain_enabled", ok: detail.domain?.enabled !== false, message: detail.domain?.enabled === false ? "域名已禁用" : "域名已启用" },
+    { name: "access_index", ok: Boolean(detail.access), message: detail.access ? "域名访问策略已存在" : codedMessage("DOMAIN_ACCESS_POLICY_MISSING") },
+    { name: "origin_config", ok: Boolean(detail.origin), message: detail.origin ? "源站配置已存在" : codedMessage("DOMAIN_ORIGIN_MISSING") },
+    { name: "kv_domain_head", ok: head.exists, message: head.exists ? `version ${head.version || "-"}` : codedMessage("DOMAIN_KEY_MISSING") }
   ];
   return { host, ok: checks.every(check => check.ok), checks, detail };
+}
+
+function codedMessage(name) {
+  const error = normalizeError(name);
+  return `${error.code} ${error.name}`;
 }

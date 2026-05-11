@@ -11,7 +11,7 @@ export async function handleGatewayRequest(context) {
   const { request, env } = context;
   const url = new URL(request.url);
   const host = getRequestHost(request);
-  if (!host) return errorResponse(request, 400, "BAD_HOST", "invalid host");
+  if (!host) return errorResponse(request, 400, "BAD_HOST");
 
   if (url.pathname === "/_gateway/login") {
     return html(loginPage(host, safeReturnTo(url)));
@@ -22,8 +22,8 @@ export async function handleGatewayRequest(context) {
 
   try {
     const bundle = await loadDomainBundle(env, host);
-    if (!bundle) return errorResponse(request, 404, "DOMAIN_NOT_FOUND", "domain is not configured");
-    if (!bundle.origin) return errorResponse(request, 502, "ORIGIN_NOT_CONFIGURED", "origin is not configured");
+    if (!bundle) return errorResponse(request, 404, "DOMAIN_NOT_FOUND");
+    if (!bundle.origin) return errorResponse(request, 502, "ORIGIN_NOT_CONFIGURED");
 
     const token = getCookie(request, env.GATEWAY_COOKIE_NAME || "df_oauth_token");
     const expectedIssuer = bundle.domain?.jwt?.issuer || "DreamReflex ZeroTrust";
@@ -32,22 +32,23 @@ export async function handleGatewayRequest(context) {
       if ((request.headers.get("accept") || "").indexOf("text/html") >= 0) {
         return html(loginPage(host, safeReturnTo(url)));
       }
-      return errorResponse(request, 401, "UNAUTHENTICATED", "authentication required");
+      return errorResponse(request, 401, "UNAUTHENTICATED");
     }
 
     if (verified.payload.access_version && bundle.access && bundle.access.version && verified.payload.access_version !== bundle.access.version) {
-      return errorResponse(request, 401, "TOKEN_STALE", "authentication token is stale");
+      return errorResponse(request, 401, "TOKEN_STALE");
     }
     if (verified.payload.config_version !== undefined && Number(verified.payload.config_version || 0) !== Number(bundle.domain.config_version || 0)) {
-      return errorResponse(request, 401, "TOKEN_STALE", "authentication token is stale");
+      return errorResponse(request, 401, "TOKEN_STALE");
     }
     const email = String(verified.payload.email || verified.payload.sub || "").toLowerCase();
     const user = await kvGet(env, `user:${email}`, Number(env.ACCESS_CACHE_TTL_SECONDS || 30));
     if (!isEmailAllowed(email, bundle.access, user)) {
-      return errorResponse(request, 403, "ACCESS_DENIED", "email is not allowed for this domain");
+      return errorResponse(request, 403, "ACCESS_DENIED");
     }
     return fetchOrigin(context, bundle.origin);
   } catch (error) {
-    return new Response("Gateway Error: " + error.message, { status: 500 });
+    console.error("Gateway internal error", error);
+    return errorResponse(request, 500, "GATEWAY_INTERNAL_ERROR");
   }
 }
