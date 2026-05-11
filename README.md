@@ -18,11 +18,11 @@
 
 ## 当前实现
 
-- 网关读取 HTTPKVDB 中的 `ztadata:*` 数据，按域名加载源站和授权配置。
+- 网关读取 HTTPKVDB userspace `ztafirewall` 中的数据，按域名加载源站和授权配置。
 - 未认证的 HTML 请求展示登录页；登录入口为 `/cgi-oauth/login`，回调为 `/cgi-oauth/callback`。
 - OAuth 使用授权码 + PKCE，issuer discovery 来自 `OAUTH_ISSUER_URL` 或 `OAUTH_DISCOVERY_URL`。
 - 登录成功后签发 `df_oauth_token` JWT Cookie；后续请求校验 JWT 的 host、签名和 access version。
-- 授权按邮箱和邮箱域名判断，数据来自 `ztadata:access:domain:{host}` 和 `ztadata:user:{email}`。
+- 授权按邮箱和邮箱域名判断，数据来自 `access:domain:{host}` 和 `user:{email}`。
 - 回源时转发原请求方法、路径、查询和大部分请求头，并注入 `Host`、`X-ZTA-Token`、`X-Forwarded-Proto`。
 - 控制面是无状态前端，浏览器直连 HTTPKVDB 管理域名、源站、用户和许可关系。
 
@@ -74,7 +74,7 @@ KVDB_BASE_URL
 KVDB_API_KEY
 ```
 
-首次连接会自动初始化 `ztadata:meta`、`ztadata:domains`、`ztadata:users`。之后在页面配置域名、源站、用户和访问许可。
+首次连接会在 HTTPKVDB userspace `ztafirewall` 中自动初始化 `meta`、`domains`、`users`。之后在页面配置域名、源站、用户和访问许可。
 
 ## 验证
 

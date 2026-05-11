@@ -2,23 +2,45 @@
 
 HTTPKVDB 是后端唯一权威持久化数据源。控制面负责写入，边缘网关负责读取。
 
+## Userspace
+
+本项目固定使用 HTTPKVDB application userspace:
+
+```text
+ztafirewall
+```
+
+普通 KV 操作必须使用 userspace URL API:
+
+```text
+/api/v1/ztafirewall/{url-encoded-key}
+```
+
+认证头使用:
+
+```text
+APIKey: <KVDB_API_KEY>
+```
+
+业务 key 不再使用旧版 `ztadata:` 前缀。HTTPKVDB 的 userspace 已经提供应用级隔离。
+
 ## Key 约定
 
 | 数据 | Key |
 |---|---|
-| 应用元数据 | `ztadata:meta` |
-| 域名列表索引 | `ztadata:domains` |
-| 域名配置 | `ztadata:domain:{host}` |
-| 源站配置 | `ztadata:origin:{origin_id}` |
-| 用户列表索引 | `ztadata:users` |
-| 用户配置 | `ztadata:user:{email}` |
-| 用户可访问域名 | `ztadata:access:user:{email}` |
-| 域名允许邮箱 | `ztadata:access:domain:{host}` |
-| OTP 预留配置 | `ztadata:auth:otp:{provider_id}` |
-| 可选策略 | `ztadata:policy:{policy_id}` |
-| 可选 JWT 密钥 | `ztadata:signing_key:{key_id}` |
-| 可选源站密钥引用 | `ztadata:secret:origin:{origin_secret_id}` |
-| 可选吊销列表 | `ztadata:revoked_jti:{jti}` |
+| 应用元数据 | `meta` |
+| 域名列表索引 | `domains` |
+| 域名配置 | `domain:{host}` |
+| 源站配置 | `origin:{origin_id}` |
+| 用户列表索引 | `users` |
+| 用户配置 | `user:{email}` |
+| 用户可访问域名 | `access:user:{email}` |
+| 域名允许邮箱 | `access:domain:{host}` |
+| OTP 预留配置 | `auth:otp:{provider_id}` |
+| 可选策略 | `policy:{policy_id}` |
+| 可选 JWT 密钥 | `signing_key:{key_id}` |
+| 可选源站密钥引用 | `secret:origin:{origin_secret_id}` |
+| 可选吊销列表 | `revoked_jti:{jti}` |
 
 OAuth issuer、client id、client secret 当前由 Edge 环境变量提供，不写入 HTTPKVDB。
 
@@ -28,14 +50,15 @@ OAuth issuer、client id、client secret 当前由 Edge 环境变量提供，不
 
 ```json
 {
-  "namespace": "ztadata",
+  "app_name": "ztafirewall",
+  "userspace": "ztafirewall",
   "schema_version": 1,
   "initialized_at": "2026-05-08T00:00:00.000Z",
   "updated_at": "2026-05-08T00:00:00.000Z"
 }
 ```
 
-Key: `ztadata:meta`
+Key: `meta`
 
 ```json
 {
@@ -45,11 +68,11 @@ Key: `ztadata:meta`
 }
 ```
 
-Key: `ztadata:domains` 和 `ztadata:users`
+Key: `domains` 和 `users`
 
 ## 域名配置
 
-Key: `ztadata:domain:{host}`
+Key: `domain:{host}`
 
 ```json
 {
@@ -73,7 +96,7 @@ Key: `ztadata:domain:{host}`
 
 ## 源站配置
 
-Key: `ztadata:origin:{origin_id}`
+Key: `origin:{origin_id}`
 
 ```json
 {
@@ -92,7 +115,7 @@ Key: `ztadata:origin:{origin_id}`
 
 ## 用户和许可
 
-Key: `ztadata:user:{email}`
+Key: `user:{email}`
 
 ```json
 {
@@ -105,7 +128,7 @@ Key: `ztadata:user:{email}`
 }
 ```
 
-Key: `ztadata:access:user:{email}`
+Key: `access:user:{email}`
 
 ```json
 {
@@ -116,7 +139,7 @@ Key: `ztadata:access:user:{email}`
 }
 ```
 
-Key: `ztadata:access:domain:{host}`
+Key: `access:domain:{host}`
 
 ```json
 {
@@ -128,5 +151,4 @@ Key: `ztadata:access:domain:{host}`
 }
 ```
 
-控制面写入授权关系时使用 HTTPKVDB transaction 同时更新用户侧和域名侧索引。
-
+控制面写入授权关系时使用 HTTPKVDB transaction 同时更新用户侧和域名侧索引。事务 API 仍走 `/v1/tx/*`，由 `APIKey` 在服务端绑定到 `ztafirewall` userspace。

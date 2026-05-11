@@ -1,8 +1,8 @@
 const cache = new Map();
-const FIXED_USERSPACE = "ztadata";
+const APP_USERSPACE = "ztafirewall";
 
-function scopedKey(key) {
-  return `${FIXED_USERSPACE}:${key}`;
+function kvPath(key) {
+  return `/api/v1/${APP_USERSPACE}/${encodeURIComponent(key)}`;
 }
 
 export function requireEnv(env, name) {
@@ -14,14 +14,13 @@ export function requireEnv(env, name) {
 export async function kvGet(env, key, ttlSeconds = 60) {
   const baseUrl = requireEnv(env, "KVDB_BASE_URL").replace(/\/+$/, "");
   const apiKey = requireEnv(env, "KVDB_API_KEY");
-  const effectiveKey = scopedKey(key);
-  const cacheKey = `${baseUrl}:${effectiveKey}`;
+  const cacheKey = `${baseUrl}:${APP_USERSPACE}:${key}`;
   const cached = cache.get(cacheKey);
   const now = Date.now();
   if (cached && cached.expiresAt > now) return cached.value;
-  const response = await fetch(`${baseUrl}/v1/kv/${encodeURIComponent(effectiveKey)}`, {
+  const response = await fetch(`${baseUrl}${kvPath(key)}`, {
     headers: {
-      authorization: `ApiKey ${apiKey}`,
+      APIKey: apiKey,
       accept: "application/json"
     }
   });

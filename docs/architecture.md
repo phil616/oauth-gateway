@@ -17,7 +17,7 @@
 ```text
 Browser
   -> EdgeOne Edge Function
-    -> read ztadata:domain:{host}, ztadata:origin:{origin_id}, ztadata:access:domain:{host}
+    -> read ztafirewall/domain:{host}, ztafirewall/origin:{origin_id}, ztafirewall/access:domain:{host}
     -> verify df_oauth_token JWT
     -> fetch origin_ip with original request headers + Host + X-ZTA-Token
 ```
@@ -41,9 +41,9 @@ oauth-gateway/edge-functions/
     access.js               # 邮箱授权判断
 ```
 
-## 固定数据空间
+## 固定持久化空间
 
-应用固定使用 `ztadata` 作为业务 key 前缀。HTTPKVDB 的协议 userspace 仍由 API Key 在服务端绑定，客户端不传 userspace 参数；本项目所有业务 key 都形如 `ztadata:*`。
+应用固定使用 `ztafirewall` 作为 HTTPKVDB userspace。普通 KV 操作使用 `/api/v1/ztafirewall/{key}`，业务 key 不再额外拼接旧版 `ztadata:` 前缀。
 
 ## 控制面设计
 
@@ -51,7 +51,6 @@ oauth-gateway/edge-functions/
 
 首次连接或刷新时，控制面会自动初始化:
 
-- `ztadata:meta`
-- `ztadata:domains`
-- `ztadata:users`
-
+- `meta`
+- `domains`
+- `users`

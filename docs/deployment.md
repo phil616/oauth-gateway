@@ -52,7 +52,7 @@ npm run build
 
 ## HTTPKVDB 准备
 
-控制面首次连接会自动初始化 `ztadata:meta`、`ztadata:domains`、`ztadata:users`。随后在控制面新增:
+HTTPKVDB 管理员需要创建应用 userspace `ztafirewall`，并为网关和控制面配置属于该 userspace 的 API Key。控制面首次连接会在 `ztafirewall` 中自动初始化 `meta`、`domains`、`users`。随后在控制面新增:
 
 1. 域名配置。
 2. 源站 IP 和 Host 头。
@@ -67,4 +67,3 @@ npm run build
 - 私网或隧道回源。
 - mTLS。
 - 源站不直接暴露公网入口。
-
