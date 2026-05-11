@@ -34,6 +34,12 @@
 cp oauth-gateway/.env.example oauth-gateway/.env
 ```
 
+也可以直接运行交互式生产配置生成脚本:
+
+```bash
+scripts/generate-prod-env.sh
+```
+
 生产环境应在 EdgeOne 控制台配置环境变量，不要提交 `.env`。常用变量:
 
 ```text

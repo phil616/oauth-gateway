@@ -18,6 +18,18 @@ docs/               # 架构和运维文档
 cp oauth-gateway/.env.example oauth-gateway/.env
 ```
 
+推荐使用脚本生成生产可用的强随机密钥和 `.env`:
+
+```bash
+scripts/generate-prod-env.sh
+```
+
+如果目标文件已存在，脚本会拒绝覆盖；确认要覆盖时使用:
+
+```bash
+scripts/generate-prod-env.sh --force
+```
+
 生产环境应在 EdgeOne 控制台配置环境变量，不要提交 `.env`。
 
 必需变量:
