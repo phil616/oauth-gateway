@@ -1,6 +1,6 @@
 # OAuth Gateway
 
-基于 Tencent Cloud EdgeOne Edge Functions 的零信任访问网关。边缘函数拦截受保护域名的请求，完成 OAuth 登录、邮箱授权校验和 JWT Cookie 会话校验，通过后再代理到源站。
+基于 Tencent Cloud EdgeOne Edge Functions 的零信任访问网关。边缘函数拦截受保护域名的请求，完成 OAuth 登录、邮箱授权校验和加密访问 Cookie 校验，通过后再代理到源站。
 
 需要一个HTTP的键值存储作为持久化后端,可参考或直接使用[httpkvdb](https://github.com/phil616/httpkvdb)项目
 
@@ -18,10 +18,10 @@
 
 ## 当前实现
 
-- 网关读取 HTTPKVDB userspace `ztafirewall` 中的数据，按域名加载源站和授权配置。
+- 网关在登录和 OAuth callback 阶段读取 HTTPKVDB userspace `ztafirewall` 中的数据，按域名加载源站和授权配置。
 - 未认证的 HTML 请求展示登录页；登录入口为 `/cgi-oauth/login`，回调为 `/cgi-oauth/callback`。
 - OAuth 使用授权码 + PKCE，issuer discovery 来自 `OAUTH_ISSUER_URL` 或 `OAUTH_DISCOVERY_URL`。
-- 登录成功后签发 `df_oauth_token` JWT Cookie；后续请求校验 JWT 的 host、签名、配置版本、授权版本和当前用户状态。
+- 登录成功后签发 `df_oauth_token` 加密 Cookie；后续业务请求只解密短期授权快照，不再读取 HTTPKVDB。
 - 授权按邮箱和邮箱域名判断，数据来自 `access:domain:{host}` 和 `user:{email}`。
 - 回源时转发原请求方法、路径、查询和大部分请求头，并注入 `Host`、`X-ZTA-Token`、`X-Forwarded-Proto`。
 - 控制面是无状态前端，浏览器直连 HTTPKVDB 管理域名、源站、用户和许可关系。
@@ -39,7 +39,8 @@ cp oauth-gateway/.env.example oauth-gateway/.env
 ```text
 KVDB_BASE_URL
 KVDB_API_KEY
-GATEWAY_JWT_SECRET
+GATEWAY_TOKEN_ACTIVE_KID
+GATEWAY_TOKEN_KEYS
 OAUTH_TX_SECRET
 ORIGIN_ZTA_TOKEN
 OAUTH_ISSUER_URL 或 OAUTH_DISCOVERY_URL
@@ -48,6 +49,7 @@ OAUTH_CLIENT_SECRET
 ```
 
 `OAUTH_CLIENT_SECRET` 是否需要取决于 OAuth client 类型和 `OAUTH_CLIENT_AUTH_METHOD`。完整示例见 [oauth-gateway/.env.example](oauth-gateway/.env.example)。
+网关加密令牌密钥的生成和轮换见 [网关加密令牌密钥管理](docs/gateway-token-keys.md)。
 
 ### IDP 配置
 
@@ -87,7 +89,8 @@ cd gateway-control && npm run check
 
 - [技术架构](docs/architecture.md)
 - [KVDB 数据模型](docs/kvdb-schema.md)
-- [OAuth 和 JWT 流程](docs/oauth-flow.md)
+- [OAuth 和加密令牌流程](docs/oauth-flow.md)
+- [网关加密令牌密钥管理](docs/gateway-token-keys.md)
 - [部署和运行](docs/deployment.md)
 - [安全边界](docs/security.md)
 - [仓库维护](docs/repository.md)
@@ -97,8 +100,8 @@ cd gateway-control && npm run check
 - 网关建议使用只读 KVDB API Key，控制面使用可写 Key。
 - HTTPKVDB 需要 HTTPS，并为控制面静态站点正确配置 CORS。
 - 源站应校验 `X-ZTA-Token`，并限制直接公网访问。
-- 禁用用户、删除用户、撤回域名授权或修改域名配置后，边缘网关会在 KVDB 缓存 TTL 内重新校验并拒绝旧 Cookie。
-- 不要提交真实密钥、API Key、OAuth secret、JWT secret 或 `.env`。
+- 禁用用户、删除用户、撤回域名授权或修改域名配置后，已经签发的短期 Cookie 会在过期前继续按旧授权快照生效；如需立即全局失效，轮换并删除旧 `GATEWAY_TOKEN_KEYS`。
+- 不要提交真实密钥、API Key、OAuth secret、网关令牌密钥或 `.env`。
 
 Nginx 源站可以这样校验网关注入的密钥:
 

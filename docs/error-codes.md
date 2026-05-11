@@ -13,7 +13,7 @@ https://doc.dreamreflex.com/info/%E4%BA%91%E6%A2%A6%E9%95%9C%E5%83%8F%E5%AE%89%E
 | E1000 | BAD_HOST | 请求主机头无效或缺失。 | 检查访问域名、代理转发的 Host 头和边缘平台域名绑定。 |
 | E1001 | DOMAIN_NOT_FOUND | 当前域名未接入网关配置。 | 在 Gateway Control 中新增或修复域名配置，并确认 KVDB 中存在对应 `domain:{host}` 记录。 |
 | E1002 | ORIGIN_NOT_CONFIGURED | 域名缺少可用源站配置。 | 检查源站 IP/主机、Host 头、源站配置键和域名引用的 `origin_id`。 |
-| E1003 | UNAUTHENTICATED | 请求没有有效认证凭据。 | 重新登录；若仍失败，检查 Cookie 域、JWT 密钥和登录回调地址。 |
+| E1003 | UNAUTHENTICATED | 请求没有有效认证凭据。 | 重新登录；若仍失败，检查 Cookie 域、网关令牌密钥和登录回调地址。 |
 | E1004 | TOKEN_STALE | 认证凭据与当前访问策略或域名配置版本不一致。 | 重新登录；如大量出现，确认策略发布后用户会话刷新流程正常。 |
 | E1005 | ACCESS_DENIED | 当前身份没有访问该域名的许可。 | 在许可矩阵中为用户或邮箱域名授予访问权限。 |
 | E1101 | OAUTH_NOT_CONFIGURED | OAuth 登录服务不可用。 | 检查 OAuth 客户端、发现地址、Issuer、密钥和域名认证方式。 |
@@ -26,7 +26,7 @@ https://doc.dreamreflex.com/info/%E4%BA%91%E6%A2%A6%E9%95%9C%E5%83%8F%E5%AE%89%E
 | E1201 | ORIGIN_SCHEME_DENIED | 源站协议不在允许范围内。 | 使用 `http` 或 `https`，并修正域名源站配置。 |
 | E1202 | ORIGIN_DENIED | 源站目标不符合安全策略。 | 检查源站地址；默认不允许私网、回环或非法目标。 |
 | E1203 | ORIGIN_TOKEN_MISSING | 源站访问令牌环境变量不可用。 | 检查边缘环境变量和域名配置中的 `zta_token_env`。 |
-| E1500 | GATEWAY_INTERNAL_ERROR | 网关处理请求时发生内部错误。 | 查看边缘运行日志，并核对 KVDB、JWT 和环境变量配置。 |
+| E1500 | GATEWAY_INTERNAL_ERROR | 网关处理请求时发生内部错误。 | 查看边缘运行日志，并核对 KVDB、网关令牌密钥和环境变量配置。 |
 | E1501 | OAUTH_INTERNAL_ERROR | OAuth 登录或回调流程发生内部错误。 | 查看边缘运行日志，并核对 OAuth 相关环境变量。 |
 | E1999 | UNKNOWN_GATEWAY_ERROR | 未分类的边缘访问错误。 | 收集请求信息和边缘日志后升级排查。 |
 

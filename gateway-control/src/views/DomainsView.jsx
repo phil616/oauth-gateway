@@ -25,7 +25,7 @@ export function DomainsView({ client, state, refresh }) {
       <PanelHeader title="域名库" action={<button className="primary compact" onClick={() => setEditing(emptyDomain())}><Plus size={16} />新增域名</button>} />
       <Toolbar query={query} setQuery={setQuery} placeholder="搜索域名" />
       <table>
-        <thead><tr><th>域名</th><th>源站</th><th>JWT TTL</th><th>授权邮箱</th><th>状态</th><th></th></tr></thead>
+        <thead><tr><th>域名</th><th>源站</th><th>令牌 TTL</th><th>授权邮箱</th><th>状态</th><th></th></tr></thead>
         <tbody>
           {rows.map(item => <tr key={item.domain?.host}>
             <td><strong>{item.domain?.host}</strong><small>{item.domain?.policy_id || "default policy"}</small></td>
@@ -70,7 +70,7 @@ function DomainDrawer({ client, initial, onClose, onSaved }) {
     <Drawer title={form.host ? "编辑域名" : "新增域名"} onClose={onClose}>
       <div className="form-grid">
         <Field label="域名" value={form.host} setValue={v => setForm({ ...form, host: v })} />
-        <Field label="JWT TTL 秒" type="number" value={form.ttl_seconds} setValue={v => setForm({ ...form, ttl_seconds: Number(v) })} />
+        <Field label="访问令牌 TTL 秒" type="number" value={form.ttl_seconds} setValue={v => setForm({ ...form, ttl_seconds: Number(v) })} />
         <Field label="源站 IP/主机" value={form.origin_ip} setValue={v => setForm({ ...form, origin_ip: v })} />
         <Field label="源站 Host 头" value={form.origin_host_header} setValue={v => setForm({ ...form, origin_host_header: v })} />
         <Field label="X-ZTA-Token 环境变量" value={form.zta_token_env} setValue={v => setForm({ ...form, zta_token_env: v })} />

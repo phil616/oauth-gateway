@@ -36,7 +36,7 @@ git lfs track
 - 真实 `.env`。
 - OAuth client secret。
 - HTTPKVDB API Key。
-- JWT signing secret。
+- 网关令牌加密密钥。
 - `gateway-control/dist/`。
 - `gateway-control/node_modules/`。
 
@@ -54,4 +54,3 @@ find oauth-gateway/edge-functions -name '*.js' -print -exec node --check {} \;
 cd gateway-control
 npm run check
 ```
-

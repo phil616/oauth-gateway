@@ -43,6 +43,7 @@ cp .env.example .env
 - 域名库 CRUD: `domains`、`domain:{host}`、`origin:{origin_id}`、`access:domain:{host}`。
 - 用户库 CRUD: `users`、`user:{email}`、`access:user:{email}`。
 - 用户域名许可: 同步维护 `access:user:{email}` 和 `access:domain:{host}`。
+- 访问令牌 TTL: 域名配置中的 `jwt.ttl_seconds` 控制边缘加密访问 Cookie 的有效期；字段名保留历史兼容命名，UI 按访问令牌解释。
 - KVDB 查询: 只读查询 `ztafirewall` userspace 内的原始 key 内容，仅调用 GET/HEAD，不提供修改入口。
 - 状态检查: HTTPKVDB `readyz`、`healthz`、基础索引 key 和单域名配置完整性检查。
 

@@ -1,6 +1,6 @@
 # HTTPKVDB 数据模型
 
-HTTPKVDB 是后端唯一权威持久化数据源。控制面负责写入，边缘网关负责读取。
+HTTPKVDB 是控制面配置和登录授权判定的权威持久化数据源。控制面负责写入；边缘网关只在登录、OAuth callback 和加密令牌签发阶段读取，普通已认证业务请求不读取 HTTPKVDB。
 
 ## Userspace
 
@@ -38,11 +38,10 @@ APIKey: <KVDB_API_KEY>
 | 域名允许邮箱 | `access:domain:{host}` |
 | OTP 预留配置 | `auth:otp:{provider_id}` |
 | 可选策略 | `policy:{policy_id}` |
-| 可选 JWT 密钥 | `signing_key:{key_id}` |
+| 可选会话吊销/审计扩展 | `revoked_jti:{jti}` |
 | 可选源站密钥引用 | `secret:origin:{origin_secret_id}` |
-| 可选吊销列表 | `revoked_jti:{jti}` |
 
-OAuth issuer、client id、client secret 当前由 Edge 环境变量提供，不写入 HTTPKVDB。
+OAuth issuer、client id、client secret、网关加密令牌密钥当前由 Edge 环境变量提供，不写入 HTTPKVDB。
 
 ## 初始化数据
 
@@ -93,6 +92,8 @@ Key: `domain:{host}`
   "config_version": 1
 }
 ```
+
+`jwt` 字段保留为历史兼容命名，当前代码只使用其中的 `issuer`、`audience` 和 `ttl_seconds` 来生成 AES-GCM 加密访问令牌；`signing_key_id` 不参与签名或加密密钥选择。加密密钥由 Edge 环境变量 `GATEWAY_TOKEN_KEYS` 管理。
 
 ## 源站配置
 
@@ -151,7 +152,7 @@ Key: `access:domain:{host}`
 }
 ```
 
-控制面写入授权关系时使用 HTTPKVDB transaction 同时更新用户侧和域名侧索引。事务 API 仍走 `/v1/tx/*`，由 `APIKey` 在服务端绑定到 `ztafirewall` userspace。
+控制面写入授权关系时使用 HTTPKVDB transaction 同时更新用户侧和域名侧索引。事务 API 仍走 `/v1/tx/*`，由 `APIKey` 在服务端绑定到 `ztafirewall` userspace。边缘网关在签发加密访问令牌时读取域名、源站、域名访问策略和用户状态；令牌签发后，普通业务请求只校验令牌中的短期授权快照。
 
 ## 一致性规则
 

@@ -3,7 +3,7 @@ import { getCookie, setCookie } from "./cookies.js";
 import { base64UrlDecode, base64UrlEncode, decodeJson, hmacSign, randomId, sha256Base64Url } from "./crypto.js";
 import { errorResponse, redirect } from "./http.js";
 import { getRequestHost } from "./hosts.js";
-import { signGatewayJwt } from "./jwt.js";
+import { createGatewayToken } from "./gateway-token.js";
 import { kvGet, loadDomainBundle, requireEnv } from "./kvdb.js";
 
 const TX_COOKIE = "__Host-df_oauth_tx";
@@ -17,6 +17,7 @@ export async function oauthStart(context) {
   if (!host) return errorResponse(request, 400, "BAD_HOST");
   const bundle = await loadDomainBundle(env, host);
   if (!bundle) return errorResponse(request, 404, "DOMAIN_NOT_FOUND");
+  if (!bundle.origin) return errorResponse(request, 502, "ORIGIN_NOT_CONFIGURED");
   if (!hasOAuthProvider(bundle.domain)) return errorResponse(request, 500, "OAUTH_NOT_CONFIGURED");
   const oauth = await loadOAuthFromEnv(env);
   if (!oauth) return errorResponse(request, 500, "OAUTH_NOT_CONFIGURED");
@@ -61,6 +62,7 @@ export async function oauthCallback(context) {
 
   const bundle = await loadDomainBundle(env, host);
   if (!bundle) return errorResponse(request, 404, "DOMAIN_NOT_FOUND");
+  if (!bundle.origin) return errorResponse(request, 502, "ORIGIN_NOT_CONFIGURED");
   if (!hasOAuthProvider(bundle.domain)) return errorResponse(request, 500, "OAUTH_NOT_CONFIGURED");
   const oauth = await loadOAuthFromEnv(env);
   if (!oauth) return errorResponse(request, 500, "OAUTH_NOT_CONFIGURED");
@@ -102,18 +104,14 @@ export async function oauthCallback(context) {
     return errorResponse(request, 403, "ACCESS_DENIED");
   }
 
-  const jwt = await signGatewayJwt(
-    { email, auth_method: "oauth", access_version: bundle.access && bundle.access.version ? bundle.access.version : 0 },
-    bundle.domain,
-    requireEnv(env, "GATEWAY_JWT_SECRET")
-  );
   const jwtConfig = bundle.domain.jwt || {};
+  const token = await createGatewayToken(env, { email, domain: bundle.domain, origin: bundle.origin, access: bundle.access });
   return new Response(null, {
     status: 302,
     headers: {
       "Location": tx.return_to || "/",
       "Cache-Control": "no-store",
-      "Set-Cookie": setCookie(env.GATEWAY_COOKIE_NAME || "df_oauth_token", jwt, Number(jwtConfig.ttl_seconds || 900))
+      "Set-Cookie": setCookie(env.GATEWAY_COOKIE_NAME || "df_oauth_token", token, Number(jwtConfig.ttl_seconds || 900))
     }
   });
 }
