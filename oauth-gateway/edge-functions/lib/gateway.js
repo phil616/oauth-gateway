@@ -4,7 +4,8 @@ import { getRequestHost, safeReturnTo } from "./hosts.js";
 import { loginPage } from "./login-page.js";
 import { fetchOrigin } from "./origin.js";
 import { verifyGatewayJwt } from "./jwt.js";
-import { loadDomainBundle, requireEnv } from "./kvdb.js";
+import { isEmailAllowed } from "./access.js";
+import { kvGet, loadDomainBundle, requireEnv } from "./kvdb.js";
 
 export async function handleGatewayRequest(context) {
   const { request, env } = context;
@@ -22,6 +23,7 @@ export async function handleGatewayRequest(context) {
   try {
     const bundle = await loadDomainBundle(env, host);
     if (!bundle) return errorResponse(request, 404, "DOMAIN_NOT_FOUND", "domain is not configured");
+    if (!bundle.origin) return errorResponse(request, 502, "ORIGIN_NOT_CONFIGURED", "origin is not configured");
 
     const token = getCookie(request, env.GATEWAY_COOKIE_NAME || "df_oauth_token");
     const expectedIssuer = bundle.domain?.jwt?.issuer || "DreamReflex ZeroTrust";
@@ -35,6 +37,14 @@ export async function handleGatewayRequest(context) {
 
     if (verified.payload.access_version && bundle.access && bundle.access.version && verified.payload.access_version !== bundle.access.version) {
       return errorResponse(request, 401, "TOKEN_STALE", "authentication token is stale");
+    }
+    if (verified.payload.config_version !== undefined && Number(verified.payload.config_version || 0) !== Number(bundle.domain.config_version || 0)) {
+      return errorResponse(request, 401, "TOKEN_STALE", "authentication token is stale");
+    }
+    const email = String(verified.payload.email || verified.payload.sub || "").toLowerCase();
+    const user = await kvGet(env, `user:${email}`, Number(env.ACCESS_CACHE_TTL_SECONDS || 30));
+    if (!isEmailAllowed(email, bundle.access, user)) {
+      return errorResponse(request, 403, "ACCESS_DENIED", "email is not allowed for this domain");
     }
     return fetchOrigin(context, bundle.origin);
   } catch (error) {

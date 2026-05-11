@@ -60,12 +60,48 @@ export async function kvGet(env, key, ttlSeconds = 60) {
   return value;
 }
 
+function validObject(value) {
+  return value && typeof value === "object" && !Array.isArray(value);
+}
+
+function normalizeDomainConfig(host, domain) {
+  if (!validObject(domain)) return null;
+  if (domain.host && String(domain.host).toLowerCase() !== host) return null;
+  if (domain.enabled === false) return null;
+  if (!domain.origin_id) return null;
+  return {
+    ...domain,
+    host,
+    config_version: Number(domain.config_version || 0)
+  };
+}
+
+function normalizeAccessConfig(host, access) {
+  if (!validObject(access)) {
+    return { host, allowed_emails: [], allowed_email_domains: [], version: 0 };
+  }
+  return {
+    host,
+    allowed_emails: Array.isArray(access.allowed_emails) ? access.allowed_emails : [],
+    allowed_email_domains: Array.isArray(access.allowed_email_domains) ? access.allowed_email_domains : [],
+    version: Number(access.version || 0)
+  };
+}
+
+function normalizeOriginConfig(origin) {
+  if (!validObject(origin)) return null;
+  if (!origin.origin_ip || !origin.origin_host_header) return null;
+  return origin;
+}
+
 export async function loadDomainBundle(env, host) {
-  const domain = await kvGet(env, `domain:${host}`, Number(env.DOMAIN_CACHE_TTL_SECONDS || 60));
-  if (!domain || domain.enabled === false) return null;
-  const [origin, access] = await Promise.all([
+  const domain = normalizeDomainConfig(host, await kvGet(env, `domain:${host}`, Number(env.DOMAIN_CACHE_TTL_SECONDS || 60)));
+  if (!domain) return null;
+  const [originRaw, accessRaw] = await Promise.all([
     kvGet(env, `origin:${domain.origin_id}`, Number(env.ORIGIN_CACHE_TTL_SECONDS || 60)),
     kvGet(env, `access:domain:${host}`, Number(env.ACCESS_CACHE_TTL_SECONDS || 30))
   ]);
+  const origin = normalizeOriginConfig(originRaw);
+  const access = normalizeAccessConfig(host, accessRaw);
   return { domain, origin, access };
 }

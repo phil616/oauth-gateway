@@ -38,6 +38,16 @@ export function makeClient(config) {
     return { response, data };
   }
 
+  function assertCommittedTransaction(result) {
+    if (result?.status !== "committed") {
+      throw new Error(`KVDB transaction did not commit: ${result?.status || "unknown"}`);
+    }
+    for (const item of result.results || []) {
+      const ok = item.status < 400 || (item.op === "DELETE" && item.status === 404);
+      if (!ok) throw new Error(`KVDB transaction op failed: ${item.op} ${item.key} ${item.status}`);
+    }
+  }
+
   return {
     baseUrl,
     authHeaders(extra = {}) {
@@ -100,10 +110,11 @@ export function makeClient(config) {
         body: JSON.stringify({ total_ops: totalOps, timeout_ms: 30000 })
       });
       const txId = create.data.tx_id;
+      let committed = null;
       for (let index = 0; index < ops.length; index += 1) {
         const op = ops[index];
         const body = op.value == null ? "" : JSON.stringify(op.value);
-        await request(`/v1/tx/${encodeURIComponent(txId)}/ops/${index + 1}`, {
+        const added = await request(`/v1/tx/${encodeURIComponent(txId)}/ops/${index + 1}`, {
           method: "POST",
           headers: headers({
             "X-KV-Op": op.op,
@@ -113,14 +124,18 @@ export function makeClient(config) {
           }),
           body: op.value == null ? undefined : body
         });
+        if (added.data?.status === "committed") committed = added.data;
       }
-      const commit = await request(`/v1/tx/${encodeURIComponent(txId)}/commit`, {
-        method: "POST",
-        headers: headers({ "Content-Type": "application/json" }),
-        body: JSON.stringify({ total_ops: totalOps })
-      });
-      return commit.data;
+      if (!committed) {
+        const commit = await request(`/v1/tx/${encodeURIComponent(txId)}/commit`, {
+          method: "POST",
+          headers: headers({ "Content-Type": "application/json" }),
+          body: JSON.stringify({ total_ops: totalOps })
+        });
+        committed = commit.data;
+      }
+      assertCommittedTransaction(committed);
+      return committed;
     }
   };
 }
-

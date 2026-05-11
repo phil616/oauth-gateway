@@ -3,7 +3,8 @@
 ## 已实现的关键控制
 
 - JWT 使用 `HttpOnly`、`Secure`、`SameSite=Lax` Cookie。
-- JWT 验证签名、issuer、audience、exp、nbf。
+- JWT 验证签名、issuer、audience、exp、nbf、domain config version 和 access version。
+- 每次受保护请求都会按 KVDB 缓存重新校验当前用户存在、用户启用状态和域名授权策略。
 - OAuth 使用授权码模式和 PKCE S256。
 - OAuth state 和 code verifier 存在签名 transaction cookie 中，默认 5 分钟有效。
 - 回源时过滤 hop-by-hop headers，并强制注入 `Host` 和 `X-ZTA-Token`。
@@ -31,4 +32,3 @@
 - 增加 JWT signing key 轮换和吊销列表。
 - 为 HTTPKVDB API Key 增加最小权限策略。
 - 源站侧增加 mTLS 或 EdgeOne 专用私网链路。
-
