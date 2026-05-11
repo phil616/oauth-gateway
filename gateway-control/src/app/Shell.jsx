@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Activity, Database, Globe2, Link2, LogOut, RefreshCw, Search, UsersRound } from "lucide-react";
+import { Activity, Database, Globe2, KeyRound, Link2, LogOut, RefreshCw, Search, UsersRound } from "lucide-react";
 import { ErrorNotice } from "../components/Common";
 import { LOGO_URL } from "../config/constants";
 import { makeClient } from "../services/kvdbClient";
@@ -10,6 +10,7 @@ import { UsersView } from "../views/UsersView";
 import { PermissionsView } from "../views/PermissionsView";
 import { KvdbReadView } from "../views/KvdbReadView";
 import { StatusView } from "../views/StatusView";
+import { TokenDebugView } from "../views/TokenDebugView";
 
 const TABS = [
   { id: "dashboard", label: "概览", icon: Activity },
@@ -17,6 +18,7 @@ const TABS = [
   { id: "users", label: "用户库", icon: UsersRound },
   { id: "permissions", label: "许可矩阵", icon: Link2 },
   { id: "kvdb", label: "KVDB 查询", icon: Search },
+  { id: "token-debug", label: "令牌调试", icon: KeyRound },
   { id: "status", label: "状态检查", icon: Database }
 ];
 
@@ -68,6 +70,7 @@ export function Shell({ config, onReset }) {
         {tab === "users" && <UsersView client={client} state={state} refresh={refresh} />}
         {tab === "permissions" && <PermissionsView client={client} state={state} refresh={refresh} />}
         {tab === "kvdb" && <KvdbReadView client={client} state={state} />}
+        {tab === "token-debug" && <TokenDebugView />}
         {tab === "status" && <StatusView client={client} state={state} refresh={refresh} />}
       </section>
     </div>

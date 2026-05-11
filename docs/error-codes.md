@@ -57,4 +57,9 @@ https://doc.dreamreflex.com/info/%E4%BA%91%E6%A2%A6%E9%95%9C%E5%83%8F%E5%AE%89%E
 | E2305 | USER_ACCESS_INDEX_MISSING | 用户访问索引缺失。 | 重新保存用户或运行索引一致性修复。 |
 | E2306 | USER_ACCESS_INDEX_MISMATCH | 用户访问索引与域名策略不一致。 | 运行索引一致性修复。 |
 | E2307 | DOMAIN_KEY_MISSING | 域名配置键不存在。 | 创建域名记录或运行索引一致性修复。 |
+| E2401 | TOKEN_FORMAT_INVALID | 调试工具中的令牌格式无效。 | 粘贴完整 `header.iv.ciphertext` 格式的 `df_oauth_token`。 |
+| E2402 | TOKEN_HEADER_UNSUPPORTED | 调试工具不支持该令牌头。 | 确认令牌由当前 AES-GCM 网关签发。 |
+| E2403 | TOKEN_KEY_NOT_FOUND | 未找到匹配解密密钥。 | 粘贴完整 `GATEWAY_TOKEN_KEYS`，或确认 `kid` 与密钥版本一致。 |
+| E2404 | TOKEN_KEY_INVALID | 解密密钥无效。 | 使用 32 字节 base64url/base64/hex 密钥，或完整 `GATEWAY_TOKEN_KEYS`。 |
+| E2405 | TOKEN_DECRYPT_FAILED | 令牌解密失败。 | 检查令牌、密钥版本和密文是否完整。 |
 | E2999 | UNKNOWN_ADMIN_ERROR | 未分类的管理台错误。 | 收集浏览器控制台、网络请求和服务日志后升级排查。 |

@@ -45,6 +45,7 @@ cp .env.example .env
 - 用户域名许可: 同步维护 `access:user:{email}` 和 `access:domain:{host}`。
 - 访问令牌 TTL: 域名配置中的 `jwt.ttl_seconds` 控制边缘加密访问 Cookie 的有效期；字段名保留历史兼容命名，UI 按访问令牌解释。
 - KVDB 查询: 只读查询 `ztafirewall` userspace 内的原始 key 内容，仅调用 GET/HEAD，不提供修改入口。
+- 令牌调试: 纯前端 AES-GCM 解密工具，粘贴 `df_oauth_token` 和 `GATEWAY_TOKEN_KEYS` 后在浏览器本地查看授权快照，默认脱敏邮箱和源站信息。
 - 状态检查: HTTPKVDB `readyz`、`healthz`、基础索引 key 和单域名配置完整性检查。
 
 ## 前端模块边界

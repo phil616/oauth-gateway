@@ -24,6 +24,11 @@ const ERROR_CATALOG = {
   USER_ACCESS_INDEX_MISSING: { code: "E2305", title: "用户访问索引缺失" },
   USER_ACCESS_INDEX_MISMATCH: { code: "E2306", title: "用户访问索引与域名策略不一致" },
   DOMAIN_KEY_MISSING: { code: "E2307", title: "域名配置键不存在" },
+  TOKEN_FORMAT_INVALID: { code: "E2401", title: "令牌格式无效" },
+  TOKEN_HEADER_UNSUPPORTED: { code: "E2402", title: "令牌头不受支持" },
+  TOKEN_KEY_NOT_FOUND: { code: "E2403", title: "未找到匹配解密密钥" },
+  TOKEN_KEY_INVALID: { code: "E2404", title: "解密密钥无效" },
+  TOKEN_DECRYPT_FAILED: { code: "E2405", title: "令牌解密失败" },
   UNKNOWN_ADMIN_ERROR: { code: "E2999", title: "未分类的管理台错误" }
 };
 
@@ -33,7 +38,12 @@ const MESSAGE_NAME_MAP = {
   "BAD_EMAIL": "BAD_EMAIL",
   "BAD_ACCESS_INPUT": "BAD_ACCESS_INPUT",
   "USER_NOT_FOUND": "USER_NOT_FOUND",
-  "DOMAIN_NOT_FOUND": "DOMAIN_NOT_FOUND"
+  "DOMAIN_NOT_FOUND": "DOMAIN_NOT_FOUND",
+  "TOKEN_FORMAT_INVALID": "TOKEN_FORMAT_INVALID",
+  "TOKEN_HEADER_UNSUPPORTED": "TOKEN_HEADER_UNSUPPORTED",
+  "TOKEN_KEY_NOT_FOUND": "TOKEN_KEY_NOT_FOUND",
+  "TOKEN_KEY_INVALID": "TOKEN_KEY_INVALID",
+  "TOKEN_DECRYPT_FAILED": "TOKEN_DECRYPT_FAILED"
 };
 
 function nameFromError(error, fallbackName) {

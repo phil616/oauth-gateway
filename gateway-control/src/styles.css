@@ -80,6 +80,28 @@ h1, h2, p { margin: 0; }
   font-weight: 600;
   letter-spacing: 0;
 }
+
+.local-tool-page {
+  min-height: 100vh;
+  padding: 24px clamp(20px, 3vw, 40px) 48px;
+  background:
+    linear-gradient(180deg, #ffffff 0, #ffffff 112px, #f8f8f9 112px, #f8f8f9 100%);
+}
+.local-tool-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  min-height: 72px;
+  margin-bottom: 24px;
+}
+.local-tool-header h1 {
+  margin-top: 2px;
+  font-size: clamp(30px, 4vw, 40px);
+  line-height: 1.18;
+  font-weight: 600;
+  letter-spacing: -1px;
+}
 .config-panel p {
   margin: 12px 0 28px;
   color: var(--steel);
@@ -96,22 +118,34 @@ label {
   font-weight: 600;
   line-height: 1.5;
 }
-input, select {
+input, select, textarea {
   width: 100%;
-  height: 42px;
   border: 1px solid var(--hairline);
   border-radius: 8px;
-  padding: 0 14px;
   color: var(--ink);
   background: var(--canvas);
 }
+input, select {
+  height: 42px;
+  padding: 0 14px;
+}
+textarea {
+  min-height: 128px;
+  padding: 12px 14px;
+  resize: vertical;
+  font: 13px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
 input::placeholder { color: #a0a4ad; }
-input:focus, select:focus {
+textarea::placeholder { color: #a0a4ad; }
+input:focus, select:focus, textarea:focus {
   outline: 0;
   border: 2px solid var(--blue);
+}
+input:focus, select:focus {
   padding-left: 13px;
   padding-right: 13px;
 }
+textarea:focus { padding: 11px 13px; }
 
 .app-shell {
   min-height: 100vh;
@@ -495,6 +529,48 @@ td small {
   white-space: nowrap;
 }
 .settings-grid { max-width: 560px; }
+
+.token-debug-layout {
+  align-items: start;
+}
+.token-debug-input-panel {
+  grid-column: span 2;
+}
+.token-debug-output-panel {
+  grid-column: span 2;
+}
+.token-debug-form {
+  display: grid;
+  gap: 16px;
+}
+.token-debug-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.compact-actions {
+  justify-content: flex-end;
+}
+.local-only {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 4px 10px;
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  color: var(--success-text);
+  background: var(--success-bg);
+  font-size: 12px;
+  font-weight: 700;
+}
+.token-debug-result {
+  display: grid;
+  gap: 16px;
+}
+.token-json-block {
+  min-height: 360px;
+}
 
 .drawer-backdrop {
   position: fixed;
@@ -987,7 +1063,9 @@ td small {
   .permission-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .status-domain-panel { grid-column: span 2; }
   .kvdb-query-panel,
-  .kvdb-result-panel { grid-column: span 2; }
+  .kvdb-result-panel,
+  .token-debug-input-panel,
+  .token-debug-output-panel { grid-column: span 2; }
   .kvdb-meta { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
@@ -1017,9 +1095,13 @@ td small {
   .panel.wide { grid-column: span 1; }
   .status-domain-panel { grid-column: span 1; }
   .kvdb-query-panel,
-  .kvdb-result-panel { grid-column: span 1; }
+  .kvdb-result-panel,
+  .token-debug-input-panel,
+  .token-debug-output-panel { grid-column: span 1; }
   .kvdb-query-form,
   .kvdb-meta { grid-template-columns: 1fr; }
+  .local-tool-page { padding: 20px 16px 40px; }
+  .local-tool-header { align-items: flex-start; flex-direction: column; }
   .app-summary {
     align-items: flex-start;
     flex-direction: column;

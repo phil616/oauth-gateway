@@ -5,7 +5,7 @@ import { makeClient } from "../services/kvdbClient";
 import { initializeDataSpace } from "../services/gatewayRepository";
 import { normalizeBaseUrl } from "../utils/validators";
 
-export function ConfigScreen({ onSave }) {
+export function ConfigScreen({ onSave, onOpenTokenDebug }) {
   const [baseUrl, setBaseUrl] = useState(import.meta.env.VITE_DEFAULT_KVDB_BASE_URL || "");
   const [apiKey, setApiKey] = useState("");
   const [error, setError] = useState("");
@@ -35,6 +35,7 @@ export function ConfigScreen({ onSave }) {
           <label>访问密钥<input value={apiKey} onChange={e => setApiKey(e.target.value)} type="password" placeholder="请输入访问密钥" /></label>
           <ErrorNotice error={error} fallbackName="LOGIN_CHECK_FAILED" />
           <button className="primary">登录</button>
+          <button className="ghost" type="button" onClick={onOpenTokenDebug}>令牌调试</button>
         </form>
       </section>
     </main>
