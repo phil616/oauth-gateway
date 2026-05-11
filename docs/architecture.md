@@ -43,7 +43,7 @@ oauth-gateway/edge-functions/
 
 ## 固定持久化空间
 
-应用固定使用 `ztafirewall` 作为 HTTPKVDB userspace。普通 KV 操作使用 `/api/v1/ztafirewall/{key}`，业务 key 不再额外拼接旧版 `ztadata:` 前缀。
+应用固定使用 `ztafirewall` 作为 HTTPKVDB userspace。普通 KV 操作使用 `/api/v1/ztafirewall/{url-encoded-key}`，认证头使用 `APIKey`，业务 key 不再额外拼接旧版 `ztadata:` 前缀。
 
 ## 控制面设计
 

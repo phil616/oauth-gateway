@@ -25,7 +25,7 @@ cp oauth-gateway/.env.example oauth-gateway/.env
 | 变量 | 说明 |
 |---|---|
 | `KVDB_BASE_URL` | HTTPKVDB 服务地址 |
-| `KVDB_API_KEY` | 网关读取 KVDB 的 API Key |
+| `KVDB_API_KEY` | 网关读取 `ztafirewall` userspace 的 API Key |
 | `GATEWAY_JWT_SECRET` | 网关 JWT HS256 签名密钥 |
 | `OAUTH_TX_SECRET` | OAuth transaction cookie 签名密钥 |
 | `ORIGIN_ZTA_TOKEN` | 默认回源密钥 |
@@ -52,7 +52,7 @@ npm run build
 
 ## HTTPKVDB 准备
 
-HTTPKVDB 管理员需要创建应用 userspace `ztafirewall`，并为网关和控制面配置属于该 userspace 的 API Key。控制面首次连接会在 `ztafirewall` 中自动初始化 `meta`、`domains`、`users`。随后在控制面新增:
+HTTPKVDB 管理员需要创建应用 userspace `ztafirewall`，并为网关和控制面配置属于该 userspace 的 API Key。边缘函数的普通 KV 读取固定使用 `/api/v1/ztafirewall/{url-encoded-key}`，并发送 `APIKey: <KVDB_API_KEY>`。控制面首次连接会在 `ztafirewall` 中自动初始化 `meta`、`domains`、`users`。随后在控制面新增:
 
 1. 域名配置。
 2. 源站 IP 和 Host 头。
